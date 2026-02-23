@@ -20,7 +20,7 @@ Before starting, you need to create an `.env` file for your Django backend with 
 1.  **Navigate to the project root:**
     Open your terminal and change directory to the root of this project, where `docker-compose.yml` is located.
     ```bash
-    cd /path/to/your/health_front_project
+    cd /health-ai_check
     ```
 2.  **Build the Docker images:**
     This command will build the Docker images for the `health` (Django) and `health_front` (React) services, as well as pull the `postgres` image.
