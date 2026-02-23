@@ -1,0 +1,120 @@
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchConsultations, addConsultation } from '../features/consultations/consultationsSlice';
+import { fetchPatients } from '../features/patients/patientsSlice';
+import { useNavigate } from 'react-router-dom';
+
+const Consultations = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const consultations = useSelector((state) => state.consultations.items);
+    const consultationStatus = useSelector((state) => state.consultations.status);
+
+    const consultationError = useSelector((state) => state.consultations.error);
+    
+    const patients = useSelector((state) => state.patients.items);
+    const patientStatus = useSelector((state) => state.patients.status);
+
+    const [formData, setFormData] = useState({
+        patient: '',
+        symptoms: '',
+        diagnosis: ''
+    });
+
+    useEffect(() => {
+        if (consultationStatus === 'idle') {
+            dispatch(fetchConsultations());
+        }
+        if (patientStatus === 'idle') {
+            dispatch(fetchPatients());
+        }
+    }, [consultationStatus, patientStatus, dispatch]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        dispatch(addConsultation(formData));
+        setFormData({ patient: '', symptoms: '', diagnosis: '' });
+    };
+
+    return (
+        <div className="p-6">
+            <h2 className="text-2xl font-bold mb-4">Consultations</h2>
+            
+            <form onSubmit={handleSubmit} className="mb-8 bg-white p-6 rounded shadow">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Patient</label>
+                        <select
+                            value={formData.patient}
+                            onChange={(e) => setFormData({...formData, patient: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                            required
+                        >
+                            <option value="">Select Patient</option>
+                            {patients.map((p) => (
+                                <option key={p.id} value={p.id}>{p.full_name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Symptoms</label>
+                        <textarea
+                            value={formData.symptoms}
+                            onChange={(e) => setFormData({...formData, symptoms: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                            rows="3"
+                            required
+                        />
+                    </div>
+                    <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">Diagnosis (Optional)</label>
+                        <textarea
+                            value={formData.diagnosis}
+                            onChange={(e) => setFormData({...formData, diagnosis: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                            rows="2"
+                        />
+                    </div>
+                </div>
+                <button type="submit" className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Add Consultation
+                </button>
+            </form>
+
+            {consultationStatus === 'loading' && <p>Loading...</p>}
+            {consultationStatus === 'failed' && <p className="text-red-500">{consultationError}</p>}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {consultations.map((consultation) => (
+                    <div key={consultation.id} className="bg-white p-4 rounded shadow border">
+                        <h3 className="font-bold text-lg">
+                            Patient: {consultation.patient_name || patients.find(p => p.id === consultation.patient)?.full_name || 'Unknown'}
+                        </h3>
+                        <p className="text-gray-700 mt-2"><strong>Symptoms:</strong> {consultation.symptoms}</p>
+                        {consultation.diagnosis && (
+                            <p className="text-gray-700 mt-1"><strong>Diagnosis:</strong> {consultation.diagnosis}</p>
+                        )}
+                        {consultation.ai_summary && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded text-sm">
+                                <strong>Recommendation generated by AI Assistant Health Check:</strong>
+                                <p className="mt-1 whitespace-pre-line">{consultation.ai_summary}</p>
+                            </div>
+                        )}
+                        <p className="text-gray-400 text-xs mt-2">
+                            {new Date(consultation.created_at).toLocaleString()}
+                        </p>
+                        <button
+                            onClick={() => navigate(`/consultations/${consultation.id}/summary`)}
+                            className="mt-4 w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition duration-200 flex items-center justify-center gap-2"
+                        >
+                            <span>✨</span>
+                            AI Assistant Health Check
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default Consultations;
